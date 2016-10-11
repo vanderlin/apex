@@ -1,6 +1,26 @@
-import controlP5.*;
-import processing.serial.*;
-import java.util.Date;
+import processing.core.*; 
+import processing.data.*; 
+import processing.event.*; 
+import processing.opengl.*; 
+
+import controlP5.*; 
+import processing.serial.*; 
+import java.util.Date; 
+
+import java.util.HashMap; 
+import java.util.ArrayList; 
+import java.io.File; 
+import java.io.BufferedReader; 
+import java.io.PrintWriter; 
+import java.io.InputStream; 
+import java.io.OutputStream; 
+import java.io.IOException; 
+
+public class led_maker_click extends PApplet {
+
+
+
+
 
 int ROWS = 8;
 int COLS = 8;
@@ -17,17 +37,17 @@ class Cell {
     boolean isOn = true;
     Cell() {
     }
-    boolean inside(float x, float y) {
+    public boolean inside(float x, float y) {
         return dist(pt.x, pt.y, x, y) < radius/2;
     }
-    int val() {
+    public int val() {
         return isOn ? 1 : 0;
     }
-    int setVal(int v) {
+    public int setVal(int v) {
         isOn = v == 1 ? true : false;
         return val();
     }
-    void draw() {
+    public void draw() {
 
         pushMatrix();
         if(rotateScreen) {
@@ -53,7 +73,7 @@ class Cell {
         if(isOn) {
             fill(255, 255, 0);
         }
-        ellipse(pt.x, pt.y, radius/1.3, radius/1.3);
+        ellipse(pt.x, pt.y, radius/1.3f, radius/1.3f);
 
         fill(0);
         ellipse(pt.x, pt.y, 1, 1);
@@ -61,19 +81,19 @@ class Cell {
 }
 
 class Slide {
-    color c = color(random(50, 255));
+    int c = color(random(50, 255));
     Cell[] cells = new Cell[TOTAL];
     int index = 0;
     float radius = cellSize;
     
-    int get(int x, int y) {
+    public int get(int x, int y) {
         return cells[y * COLS + x].val();
     }
-    void set(int x, int y, int c) {
+    public void set(int x, int y, int c) {
         cells[y * COLS + x].setVal(c);
     }
     
-    int[] bits() {
+    public int[] bits() {
         int[] frame = new int[ROWS];
         for (int i=0; i<ROWS; i++) {
             int p = 0;
@@ -86,7 +106,7 @@ class Slide {
         return frame;
     }
 
-    String frameString() {
+    public String frameString() {
         String f = "";
         for (int i=0; i<8; i++) {
             int p = 0;
@@ -114,7 +134,7 @@ class Slide {
 
     Slide(String str) {
         clear();
-        int[] values = int(split(str, ","));
+        int[] values = PApplet.parseInt(split(str, ","));
         for (int i=0; i<values.length; i++) {
             String bs = binary(values[i], 8);
             for (int j=0; j<bs.length(); j++) {
@@ -124,14 +144,14 @@ class Slide {
         }
     }
 
-    void clear() {
+    public void clear() {
         for (int i=0; i<TOTAL; i++) { 
             cells[i] = new Cell();
             cells[i].isOn = false;
         }
     }
 
-  void draw() {
+  public void draw() {
 
     float gridSize = screenW;
     float centerX = (500 - screenW)/2;
@@ -140,8 +160,8 @@ class Slide {
         for(int j=0; j<ROWS; j++) {
             int index = j * COLS + i;
             Cell cell = cells[index];
-            float x = map(i, 0, COLS-1, 0.0, screenW);
-            float y = map(j, 0, ROWS-1, 0.0, screenH);
+            float x = map(i, 0, COLS-1, 0.0f, screenW);
+            float y = map(j, 0, ROWS-1, 0.0f, screenH);
 
             cell.index = index;
             cell.pt.set(x, y);
@@ -163,7 +183,7 @@ class Slide {
         }
     }
   }
-  void export() {
+  public void export() {
     print("{\n");
     for (int i=0; i<TOTAL; i++) {
       if (i%ROWS==0) print("   B");
@@ -189,8 +209,8 @@ String animationPath = "data/animations/";
 float guiOffsetX = 500;
 
 // ------------------------------------------------------------------------
-void setup() {
-    size(800, 500);
+public void setup() {
+    
 
     cp5 = new ControlP5(this);
     // GUI
@@ -215,7 +235,7 @@ void setup() {
     // start with one slide
     slides.add(new Slide());
 
-    // loadAnimation((String)animationsFiles.get(0));
+    loadAnimation((String)animationsFiles.get(0));
 }
 
 
@@ -227,7 +247,7 @@ float t = 0;
 ArrayList animationsFiles = new ArrayList();
 
 // ----------------------------------------------
-void loadAnimationFiles() {
+public void loadAnimationFiles() {
   d1.clear();
   animationsFiles = new ArrayList();
   File folder = new File(dataPath("animations"));
@@ -247,7 +267,7 @@ void loadAnimationFiles() {
 
 
 // ----------------------------------------------
-void draw() {
+public void draw() {
     background(120);
     if (slides.size() == 0) return;
     Slide slide = (Slide)slides.get(c);
@@ -287,7 +307,7 @@ void draw() {
 
 
 // ------------------------------------------------------------------------
-void loadAnimation(String file) {
+public void loadAnimation(String file) {
   String[] frames = loadStrings(animationPath+"/"+file);
   slides.clear();
   for (int i=0; i<frames.length; i++) {
@@ -299,7 +319,7 @@ void loadAnimation(String file) {
 }
 
 // ------------------------------------------------------------------------
-void controlEvent(ControlEvent theEvent) {
+public void controlEvent(ControlEvent theEvent) {
   
   println(theEvent.getController().getName());
 
@@ -320,7 +340,7 @@ void controlEvent(ControlEvent theEvent) {
 }
 
 // ----------------------------------------------
-void keyPressed() {
+public void keyPressed() {
   if (key == ' ') {
     addSlide();
   } 
@@ -385,7 +405,7 @@ void keyPressed() {
 
 
 // ----------------------------------------------
-void addSlide() {
+public void addSlide() {
   if (slides.size()>0) {
     Slide slide = (Slide)slides.get(c);
     slides.add(new Slide(slide.cells));
@@ -396,12 +416,12 @@ void addSlide() {
 }
 
 // ----------------------------------------------
-boolean insideGrid() {
+public boolean insideGrid() {
   return mouseX < 547;
 }
 
 // ----------------------------------------------
-void drawOnGrid(int v) {
+public void drawOnGrid(int v) {
     Slide slide = (Slide)slides.get(c);
     for (int i = 0; i < slide.cells.length; ++i) {
         Cell cell = slide.cells[i];
@@ -412,7 +432,7 @@ void drawOnGrid(int v) {
 }
 
 // ----------------------------------------------
-void mousePressed() {
+public void mousePressed() {
     if (insideGrid() && slides.size()>0) {
         Slide slide = (Slide)slides.get(c);
         for (int i = 0; i < slide.cells.length; ++i) {
@@ -428,8 +448,32 @@ void mousePressed() {
     }
 }
 
-void mouseDragged() {
+public void mouseDragged() {
   if (insideGrid() && slides.size()>0) {
     drawOnGrid(dVal);
+  }
+}
+
+// ------------------------------------------------------------------------
+public PVector rotatePoint(PVector p, float a) {
+    float mx = p.x;
+    float my = p.y;
+    float rx = mx*cos(a) - my*sin(a);
+    float ry = mx*sin(a) + my*cos(a);
+    return new PVector(rx, ry);
+}
+
+// ------------------------------------------------------------------------
+public PVector translatePoint(PVector p, float tx, float ty) {
+    return new PVector(p.x+tx, p.y+ty);
+}
+  public void settings() {  size(800, 500); }
+  static public void main(String[] passedArgs) {
+    String[] appletArgs = new String[] { "led_maker_click" };
+    if (passedArgs != null) {
+      PApplet.main(concat(appletArgs, passedArgs));
+    } else {
+      PApplet.main(appletArgs);
+    }
   }
 }

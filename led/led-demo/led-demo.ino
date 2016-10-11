@@ -8,7 +8,7 @@ unsigned char prev[8];
 void setup() {
   Serial.begin(9600);
   delay(100);
-  Serial.println("8x8 LED Matrix Test");
+  Serial.println("8x8 LED Matrix");
   matrix.begin(0x70);  // pass in the address
 
   matrix.clear();
@@ -18,13 +18,6 @@ void setup() {
 int a = 0;
 void loop() {
 
-
-  /*
-    unsigned char k = random(0, 255);
-    Serial.println(k);
-    unsigned char pxs[8] = {k, 0, 0, 0, 0, 0, 0, 255};
-    matrix.drawBitmap(0, 0, pxs, 8, 8, LED_ON);
-  */
 
   int len = Serial.available();
 
@@ -49,20 +42,6 @@ void loop() {
     matrix.writeDisplay();
 
   }
-
-  /*
-    if (Serial.available() > 0) {
-    unsigned char bits[len];
-    memset(bits, 0, len);
-    for (int i = 0; i < len; i++) {
-      while (Serial.available() == 0) {}
-      bits[i] = Serial.read();
-    }
-    matrix.clear();
-    matrix.drawBitmap(0, 0, bits, 8, 8, LED_ON);
-    matrix.writeDisplay();
-    }*/
-
 
   delay(10);
 
