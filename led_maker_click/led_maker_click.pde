@@ -9,6 +9,7 @@ int screenW = 250;
 int screenH = 250;
 float cellSize = floor(screenW / COLS);
 boolean rotateScreen = true;
+float thumbnailSize = 80;
 
 class Cell {
     int index;
@@ -28,7 +29,6 @@ class Cell {
         return val();
     }
     void draw() {
-
         pushMatrix();
         if(rotateScreen) {
             rectMode(CENTER);
@@ -39,7 +39,7 @@ class Cell {
             translate(pt.x-radius/2, pt.y-radius/2);
         }
         rotate(rotateScreen?radians(45):0);
-        fill(0);
+        
         rect(0, 0, radius, radius);
         popMatrix();
 
@@ -57,6 +57,7 @@ class Cell {
 
         fill(0);
         ellipse(pt.x, pt.y, 1, 1);
+        rectMode(CORNER);
     }
 }
 
@@ -131,7 +132,47 @@ class Slide {
         }
     }
 
-  void draw() {
+    // -------------------------------------
+    void drawThumb(float x, float y, float w, float h) {
+        
+        float sqW = rotateScreen ? sqrt(2) * (w/2) : w;
+        float r = (sqW/COLS);
+        
+        pushMatrix();
+        if(rotateScreen) {
+            translate(x + w/2, y);                
+            rotate(radians(rotateScreen?45:0));
+        }
+        else {
+            translate(x, y);                
+        }
+  
+        for(int i=0; i<COLS; i++) {
+            for(int j=0; j<ROWS; j++) {
+                Cell cell = cells[j * COLS + i];
+                float px = map(i, 0, COLS, 0.0, sqW);
+                float py = map(j, 0, ROWS, 0.0, sqW);   
+                
+                noStroke();
+                if(cell.isOn) {
+                    fill(255, 255, 0);
+                }
+                else {
+                    fill(120);
+                }
+                rect(px, py, r, r);
+
+                noFill();
+                stroke(100);
+                rect(px, py, r, r);
+               
+            }
+        }
+        popMatrix();
+    }
+
+    // -------------------------------------
+    void draw() {
 
     float gridSize = screenW;
     float centerX = (500 - screenW)/2;
@@ -190,7 +231,7 @@ float guiOffsetX = 500;
 
 // ------------------------------------------------------------------------
 void setup() {
-    size(800, 500);
+    size(800, 600);
 
     cp5 = new ControlP5(this);
     // GUI
@@ -215,7 +256,7 @@ void setup() {
     // start with one slide
     slides.add(new Slide());
 
-    // loadAnimation((String)animationsFiles.get(0));
+   loadAnimation((String)animationsFiles.get(0));
 }
 
 
@@ -249,6 +290,7 @@ void loadAnimationFiles() {
 // ----------------------------------------------
 void draw() {
     background(120);
+   
     if (slides.size() == 0) return;
     Slide slide = (Slide)slides.get(c);
 
@@ -277,11 +319,52 @@ void draw() {
     info += "press (s) to save animation\n";
     info += "press (c) to clear frame\n";
     info += "press (n) to start over\n";
+    info += "press (d) to delete frame\n";
     info += "press (arrow left/right) to change frames\n";
     text(info, guiOffsetX+50, 100);
 
 
-    text("Frame "+c, 20, height-20);
+
+    float w = thumbnailSize;
+    float top = height-(w+20);
+    rectMode(CORNER);
+    noFill();
+    stroke(255);
+    rect(0, top-1, width, 20);
+    
+    int maxInWidth = int(width / w);
+    int indexOffset = c >= maxInWidth ? (c - maxInWidth + 1) : 0;
+    float offset = (indexOffset) * w;
+    for(int i = 0; i<slides.size(); i++) {
+        Slide s = (Slide)slides.get(i);
+        float x = (i * w) - offset;
+        float y = height-w;
+        noStroke();
+        
+        boolean inside = insideRect(mouseX, mouseY, x, y, w, w);
+        fill(inside?200:0);
+        rect(x, y, w, w);
+        s.drawThumb(x, y, w, w);
+
+        noFill();
+        stroke(255);
+        line(x, height, x, top);
+
+        if(c == i) {
+            noFill();
+            fill(255);
+            rect(x, top-1, w, 20);
+        }
+        fill(0);
+        textAlign(CENTER);
+        text("Frame "+i, x+(w/2), top+15);
+        textAlign(LEFT);
+    }
+
+    // what frame are we on?
+    text("Frame "+c+"/"+(slides.size()-1), 15, 20);
+
+
 }
 
 
@@ -336,6 +419,15 @@ void keyPressed() {
     }
     println("\n};");
   } 
+  // ------------------------------
+  else if (key == 'd') {
+    int n = c;
+    if(c >= slides.size()-1) {
+        n = slides.size()-2;
+    }
+    slides.remove(c);
+    c = n;
+  }
   // ------------------------------
   else if (key == 'n') {
     slides.clear();
@@ -413,6 +505,21 @@ void drawOnGrid(int v) {
 
 // ----------------------------------------------
 void mousePressed() {
+
+    float w = thumbnailSize;
+    float top = height-(w+20);
+    int maxInWidth = int(width / w);
+    int indexOffset = c >= maxInWidth ? (c - maxInWidth + 1) : 0;
+    float offset = (indexOffset) * w;
+    for(int i = 0; i<slides.size(); i++) {
+        float x = (i * w) - offset;
+        float y = height-w;
+        boolean inside = insideRect(mouseX, mouseY, x, y, w, w);
+        if(mousePressed && inside) {
+            c = i;
+        }
+    }
+
     if (insideGrid() && slides.size()>0) {
         Slide slide = (Slide)slides.get(c);
         for (int i = 0; i < slide.cells.length; ++i) {

@@ -12,3 +12,8 @@ PVector rotatePoint(PVector p, float a) {
 PVector translatePoint(PVector p, float tx, float ty) {
     return new PVector(p.x+tx, p.y+ty);
 }
+
+// ------------------------------------------------------------------------
+boolean insideRect(float tx, float ty, float x, float y, float w, float h) {
+	return tx > x && tx < x+w && ty > y && ty < y+h;
+}
