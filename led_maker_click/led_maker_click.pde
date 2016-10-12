@@ -10,7 +10,8 @@ int screenH = 250;
 float cellSize = floor(screenW / COLS);
 boolean rotateScreen = true;
 float thumbnailSize = 80;
-
+Modal modal = new Modal();
+String loadedFileName = "";
 class Cell {
     int index;
     float radius;
@@ -39,7 +40,8 @@ class Cell {
             translate(pt.x-radius/2, pt.y-radius/2);
         }
         rotate(rotateScreen?radians(45):0);
-        
+        noStroke();
+        fill(0);
         rect(0, 0, radius, radius);
         popMatrix();
 
@@ -62,6 +64,7 @@ class Cell {
 }
 
 class Slide {
+    float delay = 0;
     color c = color(random(50, 255));
     Cell[] cells = new Cell[TOTAL];
     int index = 0;
@@ -100,7 +103,7 @@ class Slide {
                 f += ",";
             }
         }
-        f += "\n";
+        f += "|"+delay+"\n";
         return f;
     }
 
@@ -115,13 +118,20 @@ class Slide {
 
     Slide(String str) {
         clear();
-        int[] values = int(split(str, ","));
+        String[] parts = split(str, "|");
+        int[] values = int(split(parts[0], ","));
         for (int i=0; i<values.length; i++) {
             String bs = binary(values[i], 8);
             for (int j=0; j<bs.length(); j++) {
                 int k = parseInt(bs.substring(j, j+1));
                 set(i, j, k);
             }
+        }
+        if(parts.length==2) {
+            delay = float(parts[1]);
+        }
+        else {
+            delay = 0;
         }
     }
 
@@ -228,15 +238,31 @@ DropdownList d1;
 boolean addOnClick = false;
 String animationPath = "data/animations/";
 float guiOffsetX = 500;
+float guiYPos;
+Textfield tf;
+// ------------------------------------------------------------------------
+boolean bPlay = false;
+int c = 0;
+int lastTime = millis();
+float t = 0;
+ArrayList animationsFiles = new ArrayList();
+float slideDelayStartTime = 0;
 
 // ------------------------------------------------------------------------
 void setup() {
     size(800, 600);
-
+    PFont font = createFont("arial", 12);
     cp5 = new ControlP5(this);
+    cp5.setFont(font);
+    cp5.setColorForeground(0xff000000);
+    cp5.setColorBackground(100);
+    cp5.setColorActive(0xff000000);
+
     // GUI
     float ypos = 10;
-    d1 = cp5.addDropdownList("Animations").setPosition(guiOffsetX+50, 10).setSize(100, height).setBarHeight(30).setItemHeight(30);
+    d1 = cp5.addDropdownList("Animations").setPosition(guiOffsetX, 10).setSize(140, height).setBarHeight(30).setItemHeight(30);
+
+   
 
     // load all the animations file
     loadAnimationFiles();
@@ -244,6 +270,17 @@ void setup() {
     cp5.addButton("Add-Click-off").setPosition(guiOffsetX+180, ypos).setSize(100, 30);  ypos += 40;
     cp5.addButton("Rotate").setPosition(guiOffsetX+180, ypos).setSize(100, 30);         ypos += 40;
 
+    tf = cp5.addTextfield("Frame Delay (seconds)")
+            .setPosition(guiOffsetX, ypos)
+            .setSize(40, 20)
+            .setFont(font)
+            .setLabel("")
+            .setAutoClear(false)
+            .setInputFilter(ControlP5.FLOAT);
+
+        ypos += 40;
+
+    guiYPos = ypos + 50;
 
     // load all the com - ports - need to add to GUI
     String[] ports = Serial.list();
@@ -259,33 +296,7 @@ void setup() {
    loadAnimation((String)animationsFiles.get(0));
 }
 
-
-// ------------------------------------------------------------------------
-boolean bPlay = false;
-int c = 0;
-int lastTime = millis();
-float t = 0;
-ArrayList animationsFiles = new ArrayList();
-
-// ----------------------------------------------
-void loadAnimationFiles() {
-  d1.clear();
-  animationsFiles = new ArrayList();
-  File folder = new File(dataPath("animations"));
-  File[] files = folder.listFiles();
-
-  int k = 0;
-  for (int i=0; i<files.length; i++) {
-    if (files[i].getName().toLowerCase().indexOf(".txt")>0) {
-      d1.addItem(files[i].getName(), k);
-      animationsFiles.add(files[i].getName());
-      k ++;
-    }
-  }
-  loadAnimation(files[1].getName());
-  d1.close();
-}
-
+float changeTime = 100;
 
 // ----------------------------------------------
 void draw() {
@@ -293,11 +304,15 @@ void draw() {
    
     if (slides.size() == 0) return;
     Slide slide = (Slide)slides.get(c);
+    float t = millis() - lastTime;
 
     if (bPlay) {
-        if (millis() - lastTime > 100) {
-            c ++; c %= slides.size();
-            lastTime = millis();
+        if (t > changeTime) {
+            if(t > (slide.delay*1000.0) + changeTime) {
+                c ++; 
+                c %= slides.size();
+                lastTime = millis();    
+            }
         }
     }
 
@@ -321,7 +336,7 @@ void draw() {
     info += "press (n) to start over\n";
     info += "press (d) to delete frame\n";
     info += "press (arrow left/right) to change frames\n";
-    text(info, guiOffsetX+50, 100);
+    text(info, guiOffsetX, guiYPos);
 
 
 
@@ -358,16 +373,56 @@ void draw() {
         fill(0);
         textAlign(CENTER);
         text("Frame "+i, x+(w/2), top+15);
+        if(c == i) {
+            
+            noStroke();
+            fill(0);
+            rect(x, top-22, w, 20);
+
+            textAlign(LEFT);
+            fill(255);
+            text("Delay "+s.delay, x+3, top-8);
+            tf.setPosition(x+39, top-22);
+
+            if(t > changeTime && bPlay) {
+                float m = map(t, 0, (slide.delay*1000.0) + changeTime, 0.0, 1.0);
+                noStroke();
+                fill(255, 255, 0);
+                rect(x, top-24, w*m, 2);
+            }
+        }
         textAlign(LEFT);
     }
 
     // what frame are we on?
+    fill(255);
     text("Frame "+c+"/"+(slides.size()-1), 15, 20);
 
+    if(tf.isFocus() == false) {
+        tf.setText(str(slide.delay));
+    }
 
+    modal.draw();
 }
 
+// ----------------------------------------------
+void loadAnimationFiles() {
+  d1.clear();
+  animationsFiles = new ArrayList();
+  File folder = new File(dataPath("animations"));
+  File[] files = folder.listFiles();
 
+  int k = 0;
+  for (int i=0; i<files.length; i++) {
+    if (files[i].getName().toLowerCase().indexOf(".txt")>0) {
+      d1.addItem(files[i].getName(), k);
+      animationsFiles.add(files[i].getName());
+      k ++;
+    }
+  }
+  loadAnimation(files[1].getName());
+  d1.close();
+}
 
 // ------------------------------------------------------------------------
 void loadAnimation(String file) {
@@ -379,37 +434,71 @@ void loadAnimation(String file) {
       slides.add(slide);
     }
   }
+  loadedFileName = file;
+}
+
+// ------------------------------------------------------------------------
+void onTextFieldChange(ControlEvent event) {
+
 }
 
 // ------------------------------------------------------------------------
 void controlEvent(ControlEvent theEvent) {
   
-  println(theEvent.getController().getName());
+    String name = theEvent.getController().getName();
+    println(name);
 
-  if (theEvent.getController().getName() == "Animations") {
-    int index = (int)theEvent.getController().getValue();
-    println("Select Animations: "+index);
-    String file = (String)animationsFiles.get(index);
-    loadAnimation(file);
-    d1.close();
-  } 
-  else if (theEvent.getController().getName().equals("Add-Click-off")) {
-    addOnClick = !addOnClick;
-    theEvent.getController().setLabel(addOnClick?"Add-Click-on":"Add-Click-off");
-  }
-  else if (theEvent.getController().getName().equals("Rotate")) {
-    rotateScreen = !rotateScreen;
-  }
+    if (name == "Animations") {
+        int index = (int)theEvent.getController().getValue();
+        println("Select Animations: "+index);
+        String file = (String)animationsFiles.get(index);
+        loadAnimation(file);
+        d1.close();
+    } 
+    else if (name.equals("Add-Click-off")) {
+        addOnClick = !addOnClick;
+        theEvent.getController().setLabel(addOnClick?"Add-Click-on":"Add-Click-off");
+    }
+    else if (name.equals("Rotate")) {
+        rotateScreen = !rotateScreen;
+    }
+    else if (name.equals("Enter")) {
+        tf.submit();
+    }
+    else if(name.equals("Frame Delay (seconds)")) {
+        String str = tf.getStringValue();
+        float v = float(str);
+        if (!Float.isNaN(v)) { 
+            Slide s = (Slide)slides.get(c);
+            s.delay = v;
+        }
+    }
 }
 
-// ----------------------------------------------
+// ------------------------------------------------------------------------
+void saveSlide() {
+    String filename = loadedFileName=="" ? (animationPath+Long.toString(new Date().getTime())+".txt"):animationPath+loadedFileName;
+    String[] str = new String[slides.size()];
+    for (int i=0; i<slides.size(); i++) {
+      str[i] = ((Slide)slides.get(i)).frameString();
+    }
+    saveStrings(filename, str);
+    loadAnimationFiles();
+    loadAnimation((String)animationsFiles.get(animationsFiles.size()-1));
+    modal.setText("Saved", 2);
+}
+
+// ------------------------------------------------------------------------
 void keyPressed() {
-  if (key == ' ') {
-    addSlide();
-  } 
-  // ------------------------------
-  else if (key == 'e') {
-    println("static const uint8_t PROGMEM\nimages["+slides.size()+"][64] = {\n"); 
+    
+    if(tf.isFocus()) return;
+
+    if (key == ' ') {
+        addSlide();
+    } 
+    // ------------------------------
+    else if (key == 'e') {
+        println("static const uint8_t PROGMEM\nimages["+slides.size()+"][64] = {\n"); 
     for (int i=0; i<slides.size(); i++) {
       Slide s = (Slide)slides.get(i);
       s.export();
@@ -453,15 +542,7 @@ void keyPressed() {
   } 
   // ------------------------------
   else if (key == 's') {
-    String filename = animationPath+Long.toString(new Date().getTime())+".txt";
-    String[] str = new String[slides.size()];
-    for (int i=0; i<slides.size(); i++) {
-      str[i] = ((Slide)slides.get(i)).frameString();
-    }
-    saveStrings(filename, str);
-    loadAnimationFiles();
-    loadAnimation((String)animationsFiles.get(animationsFiles.size()-1));
-
+      saveSlide();
   } 
   // ------------------------------
   else if (keyCode == RIGHT) {
