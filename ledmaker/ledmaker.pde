@@ -235,6 +235,7 @@ int lastSend = millis();
 int dVal = 0;
 ControlP5 cp5;
 DropdownList d1;
+DropdownList portsDropList;
 boolean addOnClick = false;
 String animationPath = "data/animations/";
 float guiOffsetX = 500;
@@ -260,9 +261,8 @@ void setup() {
 
     // GUI
     float ypos = 10;
-    d1 = cp5.addDropdownList("Animations").setPosition(guiOffsetX, 10).setSize(140, height).setBarHeight(30).setItemHeight(30);
-
-   
+    d1 = cp5.addDropdownList("Animations").setPosition(guiOffsetX, 50).setSize(140, height).setBarHeight(30).setItemHeight(30);
+    portsDropList = cp5.addDropdownList("Ports").setPosition(guiOffsetX, 10).setSize(140, height).setBarHeight(30).setItemHeight(30); 
 
     // load all the animations file
     loadAnimationFiles();
@@ -287,7 +287,9 @@ void setup() {
     String portName = ports[3];
     for (int i=0; i<ports.length; i++) {
         println(i, ports[i]);
+        portsDropList.addItem(ports[i], i);
     }
+    portsDropList.close();
     myPort = new Serial(this, portName, 9600);
 
     // start with one slide
@@ -447,8 +449,17 @@ void controlEvent(ControlEvent theEvent) {
   
     String name = theEvent.getController().getName();
     println(name);
-
-    if (name == "Animations") {
+    if(name == "Ports") {
+        if(myPort!=null) {
+            myPort.clear();
+            myPort.stop();
+        }
+        String[] ports = Serial.list();
+        int index = (int)theEvent.getController().getValue();
+        println("index: "+index);
+        myPort = new Serial(this, ports[index], 9600);
+    }
+    else if (name == "Animations") {
         int index = (int)theEvent.getController().getValue();
         println("Select Animations: "+index);
         String file = (String)animationsFiles.get(index);
