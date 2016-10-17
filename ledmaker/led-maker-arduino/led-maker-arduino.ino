@@ -4,20 +4,22 @@
 #include "Adafruit_GFX.h"
 
 Adafruit_8x8matrix matrix = Adafruit_8x8matrix();
-unsigned char prev[8];
+unsigned char pxs[8];
+
+
+// ------------------------------------------------------------------------
 void setup() {
   Serial.begin(9600);
   delay(100);
   Serial.println("8x8 LED Matrix");
-  matrix.begin(0x70);  // pass in the address
-
+  matrix.begin(0x70);
   matrix.clear();
   matrix.writeDisplay();
+  memset(pxs, 0, 8);
 }
 
-int a = 0;
+// ------------------------------------------------------------------------
 void loop() {
-
 
   int len = Serial.available();
 
@@ -25,7 +27,6 @@ void loop() {
     String s = Serial.readStringUntil('\n');
     String val = "";
     int count = 0;
-    unsigned char pxs[8];
     for (int i = 0; i < s.length(); i++) {
       char c = s[i];
       if (c != ',') {
@@ -37,13 +38,10 @@ void loop() {
         val = "";
       }
     }
-    matrix.clear();
-    matrix.drawBitmap(0, 0, pxs, 8, 8, LED_ON);
-    matrix.writeDisplay();
-
   }
-
-  delay(10);
-
-
+  
+  matrix.clear();
+  matrix.drawBitmap(0, 0, pxs, 8, 8, LED_ON);
+  matrix.writeDisplay();
+  
 }

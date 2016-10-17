@@ -1,0 +1,38 @@
+{
+  "name": "IDEO-Cambridge-Summer-2016",
+  "version": "1.0.0",
+  "description": "Summer Outing 2016",
+  "main": "index.js",
+  "scripts": {
+    "postinstall": "bower install && gulp",
+    "start": "node server"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "engines": {
+    "npm": "3.0.x"
+  },
+  "keywords": [],
+  "author": "IDEO",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": ""
+  },
+  "homepage": "",
+  "dependencies": {
+    "bower": "^1.7.9",
+    "browserify": "^13.1.0",
+    "colors": "^1.1.2",
+    "express": "^4.14.0",
+    "gulp": "^3.9.1",
+    "gulp-browserify": "^0.5.1",
+    "gulp-livereload": "^3.8.1",
+    "gulp-sass": "^2.3.2",
+    "gulp-webpack": "^1.5.0",
+    "lodash": "^4.13.1",
+    "p5": "^0.5.3",
+    "tone": "^0.7.1"
+  }
+}

@@ -63,12 +63,12 @@ void createFromCommand(String command, int * totalFrames) {
     str = rest;
     //Serial.println(token);
     createFromValues(token, &frames[c]);
-    Serial.print("Color: ");
+    /*Serial.print("Color: ");
     Serial.println(frames[c].color.toString());
 
     Serial.print("Duration: ");
     Serial.println(frames[c].duration);
-    Serial.println();
+    Serial.println();*/
     c ++;
   }
   (*totalFrames) = c;

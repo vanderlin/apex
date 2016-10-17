@@ -1,0 +1,19 @@
+{
+  "name": "FF-Splash",
+  "description": "",
+  "repository": "",
+  "logo": "",
+  "addons": [
+    "heroku-postgresql:hobby-dev"
+  ],
+  "env": {
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
+  "engines": {
+    "node": "5.10.1"
+  }
+}

@@ -18,7 +18,7 @@ Adafruit_Pixie strip = Adafruit_Pixie(NUMPIXELS, &pixieSerial);
 
 // lets say we start at black!
 
-String cmds = "#FF0000|20.5|3,#00FF00|3.5|2,#FF00FF|0.5|0.2";
+String cmds = "#FF0000|2.5|3,#00FF00|3.5|2,#FF00FF|0.5|0.2";
 int frameCount = 0;
 int totalFrames = 0;
 
@@ -34,6 +34,13 @@ Color color(0, 0, 0);
 Color start;
 Color end;
 
+Color diff;
+float prop = 0;
+float value = 0;
+float desValue = 255;
+boolean temp = false;
+boolean hasAnimation = false;
+// ------------------------------------------------------------------------
 void setup() {
 
   Serial.begin(9600);
@@ -44,8 +51,14 @@ void setup() {
   strip.setBrightness(200);
 
 
-  createFromCommand(cmds, &totalFrames);
+  // color | ramp up time | pause time, etc...
+  setupNewAnimation("#FF0000|1|1,#000000|1|1");
 
+}
+
+// ------------------------------------------------------------------------
+void setupNewAnimation(String cmds) {
+  createFromCommand(cmds, &totalFrames);
   Serial.print("Total Frames ");
   Serial.println(totalFrames);
   Serial.println("Apex Single Pixel");
@@ -58,16 +71,40 @@ void setup() {
   delayAmount = frame.delayAmount;
   start.set(0, 0, 0); // we start at black
   end.set(frame.color);
-
+  hasAnimation = true;
 }
 
 
-Color diff;
-float prop = 0;
-float value = 0;
-float desValue = 255;
-boolean temp = false;
+// ------------------------------------------------------------------------
 void loop() {
+
+
+  int len = Serial.available();
+
+  
+  if (len > 0) {
+
+    String s = Serial.readStringUntil('\n');
+
+    // if this is a single color just set it and return + "\n"
+    if (s.length() == 8) {
+      char * str = const_cast<char*>(s.c_str());
+      Color c;
+      c.set(str);
+      strip.setPixelColor(0, c.r, c.g, c.b);
+      strip.show();
+      hasAnimation = false;
+      return;
+    }
+
+    setupNewAnimation(s);
+    return;
+  }
+  
+  if(!hasAnimation) {
+    return;
+  }
+  
 
   double currentTime = (millis() - startTime) / 1000.0;
   float factor = easeInOut(currentTime, 0.0, 1.0, duration);
@@ -83,8 +120,8 @@ void loop() {
 
     // do the delay
     if (currentTime >= duration + delayAmount) {
-      Serial.println("Done with delay");
-      Serial.println(delayAmount);
+      //Serial.println("Done with delay");
+      //Serial.println(delayAmount);
       startTime = millis();
 
       frameCount ++;
@@ -100,85 +137,9 @@ void loop() {
     }
 
   }
-  /*
-    return;
-    if (!temp) {
-
-    if (!inDelay) {
-     delayStartTime = millis();
-     inDelay = false;
-    }
-    else {
-     if (delayTime >= delayAmount) {
-       inDelay = false;
-     }
-     Serial.println(currentTime);
-    }
-    color = end;
-    strip.setPixelColor(0, color.r, color.g, color.b);
-    strip.show();
-
-    return;
-    }
-    else {
-    startTime = millis();
-
-    frameCount ++;
-    frameCount %= totalFrames;
-
-    Frame frame = frames[frameCount];
-    duration = frame.duration;
-    color = end;
-    start = end;
-    end.set(frame.color);
-
-    }
-
-     Serial.print("CT ");
-     Serial.println(currentTime);
-
-     Serial.print("DT ");
-     Serial.println(duration);
-
-    duration = random(0.2, 4);
-    if (temp) {
-    color = end;
-    start = color;
-    end.set(0, 0, 255);
-    }
-    else {
-    color = end;
-    start = color;
-    end.set(255, 0, 0);
-    }
-    temp = !temp;
-    return;
-    }
-  */
-  //prop = value + (desValue - value) * factor;
-
-
-
-
-  //Serial.print("factor");
-  //Serial.println(factor);
-
-  /*if (abs(v - end.r) <= 0.1) {
-    v = end.r;
-    strip.setPixelColor(0, v, v, v);
-    strip.show();
-
-    delay(delayAmount * 1000);
-
-    startTime = millis();
-    start.r = 0;
-    end.r = 255;
-    }
-  */
 
   strip.setPixelColor(0, color.r, color.g, color.b);
   strip.show();
-
 
 }
 
